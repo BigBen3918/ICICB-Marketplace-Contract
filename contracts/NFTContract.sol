@@ -14,8 +14,8 @@ contract NFT is ERC721Enumerable {
     // public
     function mint(string memory uri) public payable {
         uint256 supply = totalSupply();
-        _safeMint(msg.sender, supply + 1);
-        metadatas[supply + 1] = uri;
+        _safeMint(msg.sender, supply);
+        metadatas[supply] = uri;
     }
 
     function tokenIdsOfOwner(address _owner)
