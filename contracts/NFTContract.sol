@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+
+contract NFT is ERC721Enumerable {
+    mapping(uint => string) metadatas;
+
+    constructor(string memory _name, string memory _symbol)
+        ERC721(_name, _symbol)
+    {}
+
+    // public
+    function mint(string memory uri) public payable {
+        uint256 supply = totalSupply();
+        _safeMint(msg.sender, supply + 1);
+        metadatas[supply + 1] = uri;
+    }
+
+    function tokenIdsOfOwner(address _owner)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 ownerTokenCount = balanceOf(_owner);
+        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
+        for (uint256 i; i < ownerTokenCount; i++) {
+            tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
+        }
+        return tokenIds;
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721Metadata: URI query for nonexistent token"
+        );
+        return metadatas[tokenId];
+    }
+}

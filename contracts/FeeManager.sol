@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./utils/access/Ownable.sol";
-
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FeeManager is Ownable {
 

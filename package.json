@@ -4,6 +4,7 @@
     "description": "",
     "main": "index.js",
     "dependencies": {
+        "@openzeppelin/contracts": "^4.5.0",
         "dotenv": "^10.0.0",
         "fs": "0.0.1-security",
         "hardhat": "^2.6.1",

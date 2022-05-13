@@ -2,18 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "./utils/access/Ownable.sol";
-import "./utils/math/SafeMath.sol";
-
-import "./utils/Address.sol";
-import "./utils/security/Pausable.sol";
-
-import "./ERC721/ERC721.sol";
-import "./ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import "./IMarketplace.sol";
 import "./FeeManager.sol";
-
 
 contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
 
@@ -28,9 +23,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
 
     // From ERC721 registry assetId to Bid (to avoid asset collision)
     mapping(address => mapping(uint256 => Bid)) public bidByOrderId;
-
-    mapping(address => mapping(uint256 => Bid[])) public bidHistoryByOrderId;
-    mapping(address => mapping(uint256 => address[])) public ownerHistoryByOrderId;
 
     // 721 Interfaces
     bytes4 public constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
@@ -47,6 +39,9 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         acceptedToken = IERC20(_acceptedToken);
     }
 
+    function setAcceptedToken(address _acceptedToken) public onlyOwner {
+        acceptedToken = IERC20(_acceptedToken);
+    }
     /**
      * @dev Sets the paused failsafe. Can only be called by owner
      * @param _setPaused - paused state
@@ -95,7 +90,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
 
         // Remove pending bid if any
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
-
 
         if (bid.id != 0) {
             _cancelBid(
@@ -271,25 +265,16 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
             .mul(FeeManager.cutPerMillion)
             .div(1e6);
 
-        
         // to owner
         acceptedToken.transfer(
             owner(),
             saleShareAmount
         );
         
-        //royallty
-         uint256 royalltyShareAmount= _priceInWei.mul(FeeManager.royaltyPerMillion).div(1e6);
-         
-        acceptedToken.transfer(
-            IERC721(_nftAddress).createrOf(_assetId),
-            royalltyShareAmount
-        );
-        
         // transfer escrowed bid amount minus market fee to seller
         acceptedToken.transfer(
             order.seller,
-            _priceInWei.sub(saleShareAmount).sub(royalltyShareAmount)
+            _priceInWei.sub(saleShareAmount)
         );
         
          // Transfer NFT asset
@@ -298,9 +283,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
             msg.sender,
             _assetId
         );
-
-        ownerHistoryByOrderId[_nftAddress][_assetId].push(msg.sender);
-        delete bidHistoryByOrderId[_nftAddress][_assetId];
+        
         emit Buycreate(
             _nftAddress,
             _assetId,
@@ -404,19 +387,10 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
             saleShareAmount
         );
         
-        //royallty
-         uint256 royalltyShareAmount= bid.price.mul(FeeManager.royaltyPerMillion).div(1e6);
-         
-        acceptedToken.transfer(
-            IERC721(_nftAddress).createrOf(_assetId),
-            royalltyShareAmount
-        );
-
-
         // transfer escrowed bid amount minus market fee to seller
         acceptedToken.transfer(
             order.seller,
-            bid.price.sub(saleShareAmount).sub(royalltyShareAmount)
+            bid.price.sub(saleShareAmount)
         );
         
         _executeOrder(
@@ -473,7 +447,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
             _buyer,
             _assetId
         );
-        ownerHistoryByOrderId[_nftAddress][_assetId].push(_buyer);
 
         // Notify ..
         emit OrderSuccessful(
@@ -482,6 +455,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
             _priceInWei
         );
     }
+
 
     /**
      * @dev Creates a new order
@@ -580,7 +554,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         // Check price if theres previous a bid
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
 
-        bidHistoryByOrderId[_nftAddress][_assetId].push(bid);
         // if theres no previous bid, just check price > 0
         if (bid.id != 0) {
             if (bid.expiresAt >= block.timestamp) {
@@ -712,26 +685,4 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         // );
         return IERC721(_nftAddress);
     }
-
-    function getOrderByAssetIds (address _nftAddress,uint256[] memory _assetIds) external view returns(Order[] memory orders){
-        orders = new Order[](_assetIds.length);
-        for(uint256 i = 0; i < _assetIds.length; i++){
-            orders[i] = orderByAssetId[_nftAddress][_assetIds[i]];
-        }
-    }
-
-    function getBidByAssetIds (address _nftAddress,uint256[] memory _assetIds) external view returns(Bid[] memory bids){
-        bids = new Bid[](_assetIds.length);
-        for(uint256 i = 0; i < _assetIds.length; i++){
-            bids[i] = bidByOrderId[_nftAddress][_assetIds[i]];
-        }
-    }
-
-    function getBidHistoryByAssetIds (address _nftAddress,uint256[] memory _assetIds) external view returns(Bid[][] memory bids){
-        bids = new Bid[][](_assetIds.length);
-        for(uint256 i = 0; i < _assetIds.length; i++){
-            bids[i] = bidHistoryByOrderId[_nftAddress][_assetIds[i]];
-        }
-    }
-
 }

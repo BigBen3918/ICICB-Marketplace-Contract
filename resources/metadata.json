@@ -6,9 +6,16 @@
         "name": "effect-1",
         "attributes": [
             {
-                "trait_type": "blur",
-                "value": "0.4",
-                "display_type": "number"
+                "key": "trait_type",
+                "value": "blur"
+            },
+            {
+                "key": "value",
+                "value": "0.4"
+            },
+            {
+                "key": "display_type",
+                "value": "number"
             }
         ],
         "background_color": "white",
@@ -22,9 +29,16 @@
         "name": "effect-2",
         "attributes": [
             {
-                "trait_type": "blur",
-                "value": "0.4",
-                "display_type": "number"
+                "key": "trait_type",
+                "value": "blur"
+            },
+            {
+                "key": "value",
+                "value": "0.4"
+            },
+            {
+                "key": "display_type",
+                "value": "number"
             }
         ],
         "background_color": "white",
@@ -38,9 +52,16 @@
         "name": "effect-3",
         "attributes": [
             {
-                "trait_type": "blur",
-                "value": "0.4",
-                "display_type": "number"
+                "key": "trait_type",
+                "value": "blur"
+            },
+            {
+                "key": "value",
+                "value": "0.4"
+            },
+            {
+                "key": "display_type",
+                "value": "number"
             }
         ],
         "background_color": "white",
@@ -54,9 +75,16 @@
         "name": "effect-4",
         "attributes": [
             {
-                "trait_type": "blur",
-                "value": "0.4",
-                "display_type": "number"
+                "key": "trait_type",
+                "value": "blur"
+            },
+            {
+                "key": "value",
+                "value": "0.4"
+            },
+            {
+                "key": "display_type",
+                "value": "number"
             }
         ],
         "background_color": "white",
@@ -70,9 +98,16 @@
         "name": "effect-5",
         "attributes": [
             {
-                "trait_type": "blur",
-                "value": "0.4",
-                "display_type": "number"
+                "key": "trait_type",
+                "value": "blur"
+            },
+            {
+                "key": "value",
+                "value": "0.4"
+            },
+            {
+                "key": "display_type",
+                "value": "number"
             }
         ],
         "background_color": "white",
