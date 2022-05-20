@@ -2,9 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-
 interface IMarketplace {
-
     struct Order {
         // Order ID
         bytes32 id;
@@ -39,11 +37,7 @@ interface IMarketplace {
         uint256 expiresAt
     );
 
-    event OrderUpdated(
-        bytes32 id,
-        uint256 priceInWei,
-        uint256 expiresAt
-    );
+    event OrderUpdated(bytes32 id, uint256 priceInWei, uint256 expiresAt);
 
     event OrderSuccessful(
         bytes32 id,
@@ -55,21 +49,22 @@ interface IMarketplace {
 
     // BID EVENTS
     event BidCreated(
-      bytes32 id,
-      address indexed nftAddress,
-      uint256 indexed assetId,
-      address indexed bidder,
-      uint256 priceInWei,
-      uint256 expiresAt
+        bytes32 id,
+        address indexed nftAddress,
+        uint256 indexed assetId,
+        address indexed bidder,
+        uint256 priceInWei,
+        uint256 expiresAt
     );
 
     event BidAccepted(bytes32 id);
     event BidCancelled(bytes32 id);
-    
-    event Buycreate(
+
+    event BuyCreated(
         address indexed nftAddress,
         uint256 indexed assetId,
         address indexed bidder,
         address seller,
-        uint256 priceInWei);
+        uint256 priceInWei
+    );
 }

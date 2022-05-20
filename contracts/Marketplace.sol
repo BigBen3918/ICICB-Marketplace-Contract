@@ -11,7 +11,6 @@ import "./IMarketplace.sol";
 import "./FeeManager.sol";
 
 contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
-
     using Address for address;
     using SafeMath for uint256;
     //using SafeERC20 for IERC20;
@@ -31,7 +30,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
      * @dev Initialize this contract. Acts as a constructor
      * @param _acceptedToken - currency for payments
      */
-    constructor(address _acceptedToken){
+    constructor(address _acceptedToken) {
         require(
             _acceptedToken.isContract(),
             "The accepted token address must be a deployed contract"
@@ -42,6 +41,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
     function setAcceptedToken(address _acceptedToken) public onlyOwner {
         acceptedToken = IERC20(_acceptedToken);
     }
+
     /**
      * @dev Sets the paused failsafe. Can only be called by owner
      * @param _setPaused - paused state
@@ -62,12 +62,9 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         uint256 _assetId,
         uint256 _priceInWei,
         uint256 _expiresAt
-    )
-        public whenNotPaused
-    {
+    ) public whenNotPaused {
         _createOrder(_nftAddress, _assetId, _priceInWei, _expiresAt);
     }
-
 
     /**
      * @dev Cancel an already published order
@@ -75,11 +72,9 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
      * @param _nftAddress - Address of the NFT registry
      * @param _assetId - ID of the published NFT
      */
-    function cancelOrder(
-        address _nftAddress,
-        uint256 _assetId
-    )
-        public whenNotPaused
+    function cancelOrder(address _nftAddress, uint256 _assetId)
+        public
+        whenNotPaused
     {
         Order memory order = orderByAssetId[_nftAddress][_assetId];
 
@@ -92,24 +87,12 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
 
         if (bid.id != 0) {
-            _cancelBid(
-                bid.id,
-                _nftAddress,
-                _assetId,
-                bid.bidder,
-                bid.price
-            );
+            _cancelBid(bid.id, _nftAddress, _assetId, bid.bidder, bid.price);
         }
 
         // Cancel order.
-        _cancelOrder(
-            order.id,
-            _nftAddress,
-            _assetId,
-            msg.sender
-        );
+        _cancelOrder(order.id, _nftAddress, _assetId, msg.sender);
     }
-
 
     /**
      * @dev Update an already published order
@@ -122,15 +105,16 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         uint256 _assetId,
         uint256 _priceInWei,
         uint256 _expiresAt
-    )
-        public whenNotPaused
-    {
+    ) public whenNotPaused {
         Order memory order = orderByAssetId[_nftAddress][_assetId];
 
         // Check valid order to update
         require(order.id != 0, "Marketplace: asset not published");
         require(order.seller == msg.sender, "Marketplace: sender not allowed");
-        require(order.expiresAt >= block.timestamp, "Marketplace: order expired");
+        require(
+            order.expiresAt >= block.timestamp,
+            "Marketplace: order expired"
+        );
 
         // check order updated params
         require(_priceInWei > 0, "Marketplace: Price should be bigger than 0");
@@ -145,7 +129,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         emit OrderUpdated(order.id, _priceInWei, _expiresAt);
     }
 
-
     /**
      * @dev Executes the sale for a published NFT and checks for the asset fingerprint
      * @param _nftAddress - Address of the NFT registry
@@ -156,19 +139,13 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         address _nftAddress,
         uint256 _assetId,
         uint256 _priceInWei
-    )
-        public whenNotPaused
-    {
+    ) public whenNotPaused {
         // Get the current valid order for the asset or fail
-        Order memory order = _getValidOrder(
-            _nftAddress,
-            _assetId
-        );
+        Order memory order = _getValidOrder(_nftAddress, _assetId);
 
         /// Check the execution price matches the order price
         require(order.price == _priceInWei, "Marketplace: invalid price");
         require(order.seller != msg.sender, "Marketplace: unauthorized sender");
-
 
         // market fee to cut
         uint256 saleShareAmount = 0;
@@ -176,9 +153,9 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         // Send market fees to owner
         if (FeeManager.cutPerMillion > 0) {
             // Calculate sale share
-            saleShareAmount = _priceInWei
-                .mul(FeeManager.cutPerMillion)
-                .div(1e6);
+            saleShareAmount = _priceInWei.mul(FeeManager.cutPerMillion).div(
+                1e6
+            );
 
             // Transfer share amount for marketplace Owner
             acceptedToken.transferFrom(
@@ -199,13 +176,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
 
         if (bid.id != 0) {
-            _cancelBid(
-                bid.id,
-                _nftAddress,
-                _assetId,
-                bid.bidder,
-                bid.price
-            );
+            _cancelBid(bid.id, _nftAddress, _assetId, bid.bidder, bid.price);
         }
 
         _executeOrder(
@@ -224,31 +195,18 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         address _nftAddress,
         uint256 _assetId,
         uint256 _priceInWei
-    )
-        public whenNotPaused
-    {
-        
-        
+    ) public whenNotPaused {
         // Checks order validity
         Order memory order = _getValidOrder(_nftAddress, _assetId);
 
+        require(_priceInWei == order.price, "Marketplace : price is not right");
 
-        require (_priceInWei==order.price,"Marketplace : price is not right");
-        
         // Check price if theres previous a bid
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
 
         // if theres no previous bid, just check price > 0
         if (bid.id != 0) {
-
-            _cancelBid(
-                bid.id,
-                _nftAddress,
-                _assetId,
-                bid.bidder,
-                bid.price
-            );
-
+            _cancelBid(bid.id, _nftAddress, _assetId, bid.bidder, bid.price);
         } else {
             require(_priceInWei > 0, "Marketplace: bid should be > 0");
         }
@@ -261,36 +219,26 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         );
 
         // calc market fees
-        uint256 saleShareAmount = _priceInWei
-            .mul(FeeManager.cutPerMillion)
-            .div(1e6);
+        uint256 saleShareAmount = _priceInWei.mul(FeeManager.cutPerMillion).div(
+            1e6
+        );
 
         // to owner
-        acceptedToken.transfer(
-            owner(),
-            saleShareAmount
-        );
-        
+        acceptedToken.transfer(owner(), saleShareAmount);
+
         // transfer escrowed bid amount minus market fee to seller
-        acceptedToken.transfer(
-            order.seller,
-            _priceInWei.sub(saleShareAmount)
-        );
-        
-         // Transfer NFT asset
-        IERC721(_nftAddress).transferFrom(
-            address(this),
-            msg.sender,
-            _assetId
-        );
-        
-        emit Buycreate(
+        acceptedToken.transfer(order.seller, _priceInWei.sub(saleShareAmount));
+
+        // Transfer NFT asset
+        IERC721(_nftAddress).transferFrom(address(this), msg.sender, _assetId);
+
+        emit BuyCreated(
             _nftAddress,
             _assetId,
             order.seller,
             msg.sender,
             _priceInWei
-            );
+        );
     }
 
     /**
@@ -305,17 +253,9 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         uint256 _assetId,
         uint256 _priceInWei,
         uint256 _expiresAt
-    )
-        public whenNotPaused
-    {
-        _createBid(
-            _nftAddress,
-            _assetId,
-            _priceInWei,
-            _expiresAt
-        );
+    ) public whenNotPaused {
+        _createBid(_nftAddress, _assetId, _priceInWei, _expiresAt);
     }
-
 
     /**
      * @dev Cancel an already published bid
@@ -323,11 +263,9 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
      * @param _nftAddress - Address of the NFT registry
      * @param _assetId - ID of the published NFT
      */
-    function cancelBid(
-        address _nftAddress,
-        uint256 _assetId
-    )
-        public whenNotPaused
+    function cancelBid(address _nftAddress, uint256 _assetId)
+        public
+        whenNotPaused
     {
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
 
@@ -336,15 +274,8 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
             "Marketplace: Unauthorized sender"
         );
 
-        _cancelBid(
-            bid.id,
-            _nftAddress,
-            _assetId,
-            bid.bidder,
-            bid.price
-        );
+        _cancelBid(bid.id, _nftAddress, _assetId, bid.bidder, bid.price);
     }
-
 
     /**
      * @dev Executes the sale for a published NFT by accepting a current bid
@@ -356,9 +287,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         address _nftAddress,
         uint256 _assetId,
         uint256 _priceInWei
-    )
-        public whenNotPaused
-    {
+    ) public whenNotPaused {
         // check order validity
         Order memory order = _getValidOrder(_nftAddress, _assetId);
 
@@ -368,7 +297,10 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         Bid memory bid = bidByOrderId[_nftAddress][_assetId];
 
         require(bid.price == _priceInWei, "Marketplace: invalid bid price");
-        require(bid.expiresAt >= block.timestamp, "Marketplace: the bid expired");
+        require(
+            bid.expiresAt >= block.timestamp,
+            "Marketplace: the bid expired"
+        );
 
         // remove bid
         delete bidByOrderId[_nftAddress][_assetId];
@@ -376,50 +308,37 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         emit BidAccepted(bid.id);
 
         // calc market fees
-        uint256 saleShareAmount = bid.price
-            .mul(FeeManager.cutPerMillion)
-            .div(1e6);
+        uint256 saleShareAmount = bid.price.mul(FeeManager.cutPerMillion).div(
+            1e6
+        );
 
-        
         // to owner
-        acceptedToken.transfer(
-            owner(),
-            saleShareAmount
-        );
-        
-        // transfer escrowed bid amount minus market fee to seller
-        acceptedToken.transfer(
-            order.seller,
-            bid.price.sub(saleShareAmount)
-        );
-        
-        _executeOrder(
-            order.id,
-            bid.bidder,
-            _nftAddress,
-            _assetId,
-            _priceInWei
-        );
-    }
+        acceptedToken.transfer(owner(), saleShareAmount);
 
+        // transfer escrowed bid amount minus market fee to seller
+        acceptedToken.transfer(order.seller, bid.price.sub(saleShareAmount));
+
+        _executeOrder(order.id, bid.bidder, _nftAddress, _assetId, _priceInWei);
+    }
 
     /**
      * @dev Internal function gets Order by nftRegistry and assetId. Checks for the order validity
      * @param _nftAddress - Address of the NFT registry
      * @param _assetId - ID of the published NFT
      */
-    function _getValidOrder(
-        address _nftAddress,
-        uint256 _assetId
-    )
-        internal view returns (Order memory order)
+    function _getValidOrder(address _nftAddress, uint256 _assetId)
+        internal
+        view
+        returns (Order memory order)
     {
         order = orderByAssetId[_nftAddress][_assetId];
 
         require(order.id != 0, "Marketplace: asset not published");
-        require(order.expiresAt >= block.timestamp, "Marketplace: order expired");
+        require(
+            order.expiresAt >= block.timestamp,
+            "Marketplace: order expired"
+        );
     }
-
 
     /**
      * @dev Executes the sale for a published NFT
@@ -435,27 +354,16 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         address _nftAddress,
         uint256 _assetId,
         uint256 _priceInWei
-    )
-        internal
-    {
+    ) internal {
         // remove order
         delete orderByAssetId[_nftAddress][_assetId];
 
         // Transfer NFT asset
-        IERC721(_nftAddress).transferFrom(
-            address(this),
-            _buyer,
-            _assetId
-        );
+        IERC721(_nftAddress).transferFrom(address(this), _buyer, _assetId);
 
         // Notify ..
-        emit OrderSuccessful(
-            _orderId,
-            _buyer,
-            _priceInWei
-        );
+        emit OrderSuccessful(_orderId, _buyer, _priceInWei);
     }
-
 
     /**
      * @dev Creates a new order
@@ -469,9 +377,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         uint256 _assetId,
         uint256 _priceInWei,
         uint256 _expiresAt
-    )
-        internal
-    {
+    ) internal {
         // Check nft registry
         IERC721 nftRegistry = _requireERC721(_nftAddress);
 
@@ -491,11 +397,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         );
 
         // get NFT asset from seller
-        nftRegistry.transferFrom(
-            assetOwner,
-            address(this),
-            _assetId
-        );
+        nftRegistry.transferFrom(assetOwner, address(this), _assetId);
 
         // create the orderId
         bytes32 orderId = keccak256(
@@ -527,7 +429,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         );
     }
 
-
     /**
      * @dev Creates a new bid on a existing order
      * @param _nftAddress - Non fungible registry address
@@ -540,9 +441,7 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         uint256 _assetId,
         uint256 _priceInWei,
         uint256 _expiresAt
-    )
-        internal
-    {
+    ) internal {
         // Checks order validity
         Order memory order = _getValidOrder(_nftAddress, _assetId);
 
@@ -561,19 +460,11 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
                     _priceInWei > bid.price,
                     "Marketplace: bid price should be higher than last bid"
                 );
-
             } else {
                 require(_priceInWei > 0, "Marketplace: bid should be > 0");
             }
 
-            _cancelBid(
-                bid.id,
-                _nftAddress,
-                _assetId,
-                bid.bidder,
-                bid.price
-            );
-
+            _cancelBid(bid.id, _nftAddress, _assetId, bid.bidder, bid.price);
         } else {
             require(_priceInWei > 0, "Marketplace: bid should be > 0");
         }
@@ -614,7 +505,6 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         );
     }
 
-
     /**
      * @dev Cancel an already published order
      *  can only be canceled by seller or the contract owner
@@ -628,21 +518,14 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         address _nftAddress,
         uint256 _assetId,
         address _seller
-    )
-        internal
-    {
+    ) internal {
         delete orderByAssetId[_nftAddress][_assetId];
 
         /// send asset back to seller
-        IERC721(_nftAddress).transferFrom(
-            address(this),
-            _seller,
-            _assetId
-        );
+        IERC721(_nftAddress).transferFrom(address(this), _seller, _assetId);
 
         emit OrderCancelled(_orderId);
     }
-
 
     /**
      * @dev Cancel bid from an already published order
@@ -659,22 +542,20 @@ contract Marketplace is Ownable, Pausable, FeeManager, IMarketplace {
         uint256 _assetId,
         address _bidder,
         uint256 _escrowAmount
-    )
-        internal
-    {
+    ) internal {
         delete bidByOrderId[_nftAddress][_assetId];
 
         // return escrow to canceled bidder
-        acceptedToken.transfer(
-            _bidder,
-            _escrowAmount
-        );
+        acceptedToken.transfer(_bidder, _escrowAmount);
 
         emit BidCancelled(_bidId);
     }
 
-
-    function _requireERC721(address _nftAddress) internal view returns (IERC721) {
+    function _requireERC721(address _nftAddress)
+        internal
+        view
+        returns (IERC721)
+    {
         require(
             _nftAddress.isContract(),
             "The NFT Address should be a contract"
